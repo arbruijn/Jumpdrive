@@ -232,7 +232,7 @@ build/atf/rk3399/bl31.elf: src/arm-trusted-firmware
 	@echo "MAKE  $@"
 	@mkdir -p build/atf/rk3399
 	@cd src/arm-trusted-firmware; make $(CROSS_FLAGS_BOOT) PLAT=rk3399 bl31
-	@cp src/arm-trusted-firmware/build/sun50i_a64/release/bl31/bl31.elf "$@"
+	@cp src/arm-trusted-firmware/build/rk3399/release/bl31/bl31.elf "$@"
 
 u-boot-rk3399.bin: build/atf/rk3399/bl31.elf src/u-boot
 	@echo "MAKE  $@"
