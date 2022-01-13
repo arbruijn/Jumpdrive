@@ -87,6 +87,27 @@ fat-pine64-pinebookpro.img: initramfs-pine64-pinebookpro.gz kernel-rockchip.gz s
 	@mmd   -i $@ extlinux
 	@mcopy -i $@ src/pine64-pinebookpro.conf ::extlinux/extlinux.conf
 
+pine64-pinephonepro.img: fat-pine64-pinephonepro.img u-boot-rk3399.bin
+	rm -f $@
+	truncate --size 50M $@
+	parted -s $@ mktable msdos
+	parted -s $@ mkpart primary fat32 32768s 100%
+	parted -s $@ set 1 boot on
+	dd if=u-boot-rk3399.bin of=$@ bs=32k seek=1
+	dd if=fat-$@ of=$@ seek=32768 bs=512
+
+fat-pine64-pinephonepro.img: initramfs-pine64-pinephonepro.gz kernel-ppp.gz src/pine64-pinephonepro.conf dtbs/ppp/rk3399-pinephone-pro.dtb
+	@echo "MKFS  $@"
+	@rm -f $@
+	@truncate --size 40M $@
+	@mkfs.fat -F32 $@
+	
+	@mcopy -i $@ kernel-ppp.gz ::Image.gz
+	@mcopy -i $@ dtbs/ppp/rk3399-pinephone-pro.dtb ::rk3399-pinephone-pro.dtb
+	@mcopy -i $@ initramfs-pine64-pinephonepro.gz ::initramfs.gz
+	@mmd   -i $@ extlinux
+	@mcopy -i $@ src/pine64-pinephonepro.conf ::extlinux/extlinux.conf
+
 kernel-xiaomi-beryllium-tianma.gz-dtb: kernel-sdm845.gz dtbs/sdm845/sdm845-xiaomi-beryllium-tianma.dtb
 	cat kernel-sdm845.gz dtbs/sdm845/sdm845-xiaomi-beryllium-tianma.dtb > $@
 
@@ -174,6 +195,16 @@ kernel-rockchip.gz: src/linux_config_rockchip src/linux-rockchip
 	@cp build/linux-rockchip/arch/arm64/boot/Image.gz $@
 	@cp build/linux-rockchip/arch/arm64/boot/dts/rockchip/*.dtb dtbs/rockchip/
 
+kernel-ppp.gz: src/linux_config_ppp src/linux-ppp
+	@echo "MAKE  $@"
+	@mkdir -p build/linux-ppp
+	@mkdir -p dtbs/ppp
+	@cp src/linux_config_ppp build/linux-ppp/.config
+	@$(MAKE) -C src/linux-ppp O=../../build/linux-ppp $(CROSS_FLAGS) olddefconfig
+	@$(MAKE) -C src/linux-ppp O=../../build/linux-ppp $(CROSS_FLAGS)
+	@cp build/linux-ppp/arch/arm64/boot/Image.gz $@
+	@cp build/linux-ppp/arch/arm64/boot/dts/rockchip/rk3399-pinephone-pro.dtb dtbs/ppp/
+
 kernel-librem5.gz: src/linux_config_librem5 src/linux-librem5
 	@echo "MAKE  $@"
 	@mkdir -p build/linux-librem5
@@ -252,6 +283,12 @@ src/linux-rockchip:
 	@mkdir src/linux-rockchip
 	@wget https://gitlab.manjaro.org/tsys/linux-pinebook-pro/-/archive/v5.6/linux-pinebook-pro-v5.6.tar.gz
 	@tar -xf linux-pinebook-pro-v5.6.tar.gz --strip-components 1 -C src/linux-rockchip
+
+src/linux-ppp:
+	@echo "WGET  linux-ppp"
+	@mkdir src/linux-ppp
+	@wget https://gitlab.com/pine64-org/linux/-/archive/pine64-kernel-ppp-5.16.y/linux-pine64-kernel-ppp-5.16.y.tar.gz
+	@tar -xf linux-pine64-kernel-ppp-5.16.y.tar.gz --strip-components 1 -C src/linux-ppp
 
 src/linux-sunxi:
 	@echo "WGET  linux-sunxi"
